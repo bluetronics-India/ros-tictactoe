@@ -30,7 +30,7 @@ How to install the tictactoe simulator:
     ```
 How to run a game simulation:
 
-1. Run a simulation by executing a launch file in cvg_sim_gazebo package:
+1. Run a simulation by executing a launch file:
 
     ```
     roslaunch complex_communication start_game.launch
