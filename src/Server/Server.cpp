@@ -96,14 +96,14 @@ void server::moveCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table){
         ros::shutdown();
 	}
 
-    //Checks if tight then sends msg to players to terminate
+    //Checks if tie then sends msg to players to terminate
     for(i = 0; i < 9; i++){
         if(table[i] != 0){
             counter++;
         }
     }
     if (counter == 9){
-        ROS_INFO("Tight\n");
+        ROS_INFO("Tie\n");
         winner_pub.publish(msg);
         ros::spinOnce();
         ros::shutdown();
