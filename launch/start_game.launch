@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+	<arg name="player1" default="1" />
+	<arg name="player2" default="2" />
+	<node name="server" pkg="complex_communication" type="server" output="screen"></node>
+	<node name="player1" pkg="complex_communication" type="player" output="screen" args="$(arg player1)"></node>
+	<node name="player2" pkg="complex_communication" type="player" output="screen" args="$(arg player2)"></node>
+</launch>
+
