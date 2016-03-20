@@ -7,6 +7,8 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Empty.h"
 
+#include <pthread.h>
+
 
 struct player{
 
@@ -15,7 +17,9 @@ struct player{
         ros::Subscriber table_sub;
         ros::Subscriber winner_sub;
         ros::Publisher move_pub;
+        pthread_mutex_t mtx;
         int id;
+        bool drop_msg;
         
     public:
         player(int player_id);

@@ -8,15 +8,18 @@
 #include <stdlib.h>     /* srand, rand */
 #include <time.h> 
 
+#include <pthread.h>
+
 #include "Player.h"
 
 player::player(int player_id){
 
-    move_pub = n.advertise<std_msgs::Int32MultiArray>("get_move", 10);
-    table_sub = n.subscribe("get_table", 100, &player::tableCallback,this);
-    winner_sub = n.subscribe("winner", 100, &player::winnerCallback,this);
+    move_pub = n.advertise<std_msgs::Int32MultiArray>("get_move", 2);
+    table_sub = n.subscribe("get_table", 2, &player::tableCallback,this);
+    winner_sub = n.subscribe("winner", 2, &player::winnerCallback,this);
     id = player_id;
-
+    pthread_mutex_init(&mtx,NULL);
+    drop_msg = false;
 }
 
 player::~player(){
@@ -25,11 +28,21 @@ player::~player(){
 
 void player::tableCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table){
 
+
     int i = 0;
     int table[9];
     int counter = 0;
     int randNum;
     std_msgs::Int32MultiArray move;
+    ros::Rate loop_rate(0.5);
+
+    pthread_mutex_lock( &mtx );
+
+    if (drop_msg == true){
+        drop_msg = false;
+        pthread_mutex_unlock( &mtx );
+        return;
+    }
 
     //Copy table
 	for(std::vector<int>::const_iterator it = new_table->data.begin(); it != new_table->data.end(); ++it)
@@ -44,7 +57,8 @@ void player::tableCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table)
             counter++;
         }
 	}
-	if (((counter + id )% 2) && counter != 0) {
+	if (((counter + this->id )% 2) && counter != 0) {
+
         //... generate random numbers until you find an empty cell then fill the cell then...
         while(true){
             srand(time(NULL));
@@ -58,11 +72,14 @@ void player::tableCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table)
         for(i = 0; i < 9; i++){
             move.data.push_back(table[i]);
         }
+        drop_msg = true;
         move_pub.publish(move);
-        ros::spinOnce();
+
 	}
 
-	return;
+    pthread_mutex_unlock( &mtx );
+
+    return;
 }
 
 void player::winnerCallback(const std_msgs::Empty::ConstPtr& winner){

@@ -22,6 +22,8 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Empty.h"
 
+#include <boost/bind.hpp>
+
 
 #include "Server.h"
 
@@ -33,13 +35,14 @@
 
 server::server(){
 
-    table_pub = n.advertise<std_msgs::Int32MultiArray>("get_table", 10);
-    winner_pub = n.advertise<std_msgs::Empty>("winner", 10);
-    table_sub = n.subscribe("get_move", 100, &server::moveCallback,this);
+    table_pub = n.advertise<std_msgs::Int32MultiArray>("get_table", 1,boost::bind(&server::connectCallback, this, _1));
+    winner_pub = n.advertise<std_msgs::Empty>("winner", 1);
+    move_sub = n.subscribe("get_move", 1, &server::moveCallback,this);
     for (int i = 0; i < 9 ; i++){
         saved_table.data.push_back(0);
     }
-    
+    pthread_mutex_init(&mtx,NULL);
+
 }
 
 server::~server()
@@ -55,6 +58,7 @@ void server::moveCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table){
     int table[9];
     int counter = 0;
 
+    pthread_mutex_lock( &mtx );
 
     //Copy new table from msg - it is pressumed that players dont cheat
     saved_table.data.clear();
@@ -67,6 +71,8 @@ void server::moveCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table){
 		i++;
 	}
     ROS_INFO("End of Table\n");
+
+    table_pub.publish(saved_table);
 
 	//Rules
 	if ((table[0] == 1 && table[1] == 1 && table[2] == 1) || (table[3] == 1 && table[4] == 1 && table[5] == 1) || (table[6] == 1 && table[7] == 1 && table[8] == 1)){
@@ -109,20 +115,20 @@ void server::moveCallback(const std_msgs::Int32MultiArray::ConstPtr& new_table){
         ros::shutdown();
     }
 
+    pthread_mutex_unlock( &mtx );
+
 	return;
+}
+
+void server::connectCallback(const ros::SingleSubscriberPublisher& table_pub){
+     
+    table_pub.publish(saved_table);
+
 }
 
 void server::Loop(){
 
-    ros::Rate loop_rate(10);
-
-    while (n.ok()){
-
-        table_pub.publish(saved_table);
-        ros::spinOnce();
-        loop_rate.sleep();
-
-    }
+    ros::spin();
 
     return;
 }
